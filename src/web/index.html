@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>W0ND3R Guard — Live scan</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Inter:wght@400;500;600&display=swap');
+
+  :root{
+    --bg: #07090a;
+    --bg-panel: #0d1210;
+    --bg-panel-2: #0a0d0c;
+    --border: #1c2620;
+    --border-soft: #141a17;
+    --text: #e8f5ee;
+    --text-dim: #9db3a8;
+    --text-mute: #5c6b62;
+    --accent: #39ff88;
+    --accent-dim: #1f4a30;
+    --danger: #ff5c5c;
+    --danger-bg: #2a1414;
+    --danger-border: #4a1f1f;
+    --warn: #ffbd4a;
+    --warn-bg: #2a2114;
+    --warn-border: #4a381f;
+    --clean-bg: #0f2418;
+    --clean-border: #1f4a30;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+    --sans: 'Inter', -apple-system, sans-serif;
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html{ scroll-behavior:smooth; }
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{ color:inherit; text-decoration:none; }
+  ::selection{ background:#39ff8833; }
+
+  .wrap{ max-width:1180px; margin:0 auto; padding:0 32px; }
+
+  header{
+    position:sticky; top:0; z-index:50;
+    background:rgba(7,9,10,0.85);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--border-soft);
+  }
+  nav{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:20px 0;
+  }
+  .mark{
+    display:flex; align-items:center; gap:10px;
+    font-family:var(--mono); font-weight:800; font-size:16px; letter-spacing:0.02em;
+  }
+  .mark .box{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:26px; height:26px; border-radius:6px;
+    border:1.5px solid var(--accent); color:var(--accent);
+    box-shadow:0 0 12px #39ff8855, inset 0 0 6px #39ff8822;
+    font-size:14px;
+  }
+  .mark .dr{ color:var(--text); }
+  .pill{
+    font-family:var(--mono); font-size:12px; color:var(--text-mute);
+    border:1px solid var(--border); padding:6px 12px; border-radius:100px;
+  }
+
+  main{ padding:56px 0 90px; }
+  .section-head{ max-width:640px; margin:0 auto 40px; text-align:center; }
+  .section-eyebrow{
+    font-family:var(--mono); font-size:12px; letter-spacing:0.1em; text-transform:uppercase;
+    color:var(--text-mute); margin-bottom:12px;
+  }
+  h1{ font-size:clamp(28px,3.6vw,40px); font-weight:800; letter-spacing:-0.01em; }
+  .section-sub{ color:var(--text-dim); margin-top:14px; font-size:16px; line-height:1.6; }
+
+  .scan-form{
+    max-width:820px; margin:0 auto 12px;
+    display:flex; gap:10px; flex-wrap:wrap;
+  }
+  .scan-form input[type="text"], .scan-form input[type="password"]{
+    flex:1 1 320px;
+    font-family:var(--mono); font-size:14px; color:var(--text);
+    background:var(--bg-panel-2); border:1px solid var(--border); border-radius:8px;
+    padding:13px 16px; outline:none;
+  }
+  .scan-form input:focus{ border-color:var(--accent); }
+  .scan-form input::placeholder{ color:var(--text-mute); }
+  .file-drop{
+    flex:1 1 320px;
+    font-family:var(--mono); font-size:13px; color:var(--text-dim);
+    background:var(--bg-panel-2); border:1px dashed var(--border); border-radius:8px;
+    padding:13px 16px; cursor:pointer; display:flex; align-items:center; gap:10px;
+  }
+  .file-drop:hover{ border-color:var(--accent); }
+  .file-drop input[type="file"]{ display:none; }
+  .btn{
+    font-family:var(--sans); font-weight:600; font-size:14px;
+    padding:13px 22px; border-radius:8px; border:1px solid transparent;
+    cursor:pointer; transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .btn-primary{ background:var(--accent); color:#052213; }
+  .btn-primary:hover{ transform:translateY(-1px); box-shadow:0 6px 20px #39ff8833; }
+  .btn-primary:disabled{ opacity:0.6; cursor:not-allowed; transform:none; box-shadow:none; }
+  .btn-ghost{ background:transparent; color:var(--text); border-color:var(--border); }
+  .btn-ghost:hover{ border-color:var(--accent); color:var(--accent); }
+
+  .hint{ max-width:820px; margin:0 auto 20px; font-family:var(--mono); font-size:12px; color:var(--text-mute); }
+
+  .status-line{
+    max-width:820px; margin:0 auto 20px; font-family:var(--mono); font-size:13px; color:var(--text-mute);
+    min-height:18px;
+  }
+  .status-line.error{ color:var(--danger); }
+
+  .report{
+    max-width:820px; margin:0 auto;
+    background:var(--bg-panel-2); border:1px solid var(--border); border-radius:10px; overflow:hidden;
+  }
+  .report-bar{
+    display:flex; align-items:center; gap:9px; padding:15px 20px;
+    background:var(--bg-panel); border-bottom:1px solid var(--border);
+    font-family:var(--mono); font-size:13px; color:var(--text-mute);
+  }
+  .dot{ width:9px; height:9px; border-radius:50%; }
+  .report-body{ padding:22px 24px; display:flex; flex-direction:column; gap:14px; }
+  .report-empty{ color:var(--text-mute); font-family:var(--mono); font-size:13.5px; text-align:center; padding:20px 0; }
+  .finding{
+    background:var(--bg-panel); border-radius:8px; padding:18px 20px;
+    border:1px solid var(--border); border-left:3px solid var(--border);
+    display:flex; flex-direction:column; gap:9px;
+  }
+  .finding.critical{ border-color:var(--danger-border); border-left-color:var(--danger); }
+  .finding.warning{ border-color:var(--warn-border); border-left-color:var(--warn); }
+  .finding.clean{ border-color:var(--clean-border); border-left-color:var(--accent); flex-direction:row; align-items:center; gap:12px; }
+  .badge{
+    font-family:var(--mono); font-size:10.5px; font-weight:700; letter-spacing:0.04em;
+    padding:3px 9px; border-radius:4px; white-space:nowrap; text-transform:uppercase;
+  }
+  .badge.critical{ color:var(--danger); background:var(--danger-bg); }
+  .badge.warning{ color:var(--warn); background:var(--warn-bg); }
+  .badge.clean{ color:var(--accent); background:var(--clean-bg); }
+  .f-title{ font-size:15.5px; font-weight:600; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .f-desc{ font-size:14px; color:var(--text-dim); line-height:1.6; }
+  .f-code{
+    font-family:var(--mono); font-size:12.5px; color:var(--text-mute);
+    background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:9px 12px;
+    overflow-x:auto; white-space:pre;
+  }
+  .summary-line{
+    max-width:820px; margin:20px auto 0; font-family:var(--mono); font-size:13.5px; color:var(--text-dim); text-align:center;
+  }
+
+  #pricing{ margin-top:80px; padding-top:56px; border-top:1px solid var(--border-soft); }
+  .pricing{ display:grid; grid-template-columns:1fr 1fr; gap:24px; max-width:820px; margin:0 auto; }
+  .price-card{
+    background:var(--bg-panel); border:1px solid var(--border); border-radius:12px;
+    padding:32px 28px; display:flex; flex-direction:column; gap:18px;
+  }
+  .price-card.featured{ border-color:var(--accent); box-shadow:0 0 0 1px var(--accent), 0 20px 50px -20px #39ff8822; }
+  .price-name{ font-family:var(--mono); font-size:13px; color:var(--text-mute); letter-spacing:0.06em; text-transform:uppercase; }
+  .price-amt{ font-size:34px; font-weight:800; }
+  .price-amt span{ font-size:14px; color:var(--text-mute); font-weight:500; }
+  .price-desc{ font-size:14px; color:var(--text-dim); line-height:1.6; }
+  @media (max-width:700px){ .pricing{ grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <nav>
+      <span class="mark">
+        <span class="box">1</span>
+        <span class="dr">DR</span>
+      </span>
+      <span class="pill" id="mode-pill">local scan — nothing leaves this machine except optional AI fix calls</span>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-eyebrow">Live scan</div>
+      <h1>Point it at a real resource</h1>
+      <p class="section-sub" id="section-sub">Enter the absolute path to a FiveM resource folder on this machine and scan it for real.</p>
+    </div>
+
+    <form class="scan-form" id="path-form">
+      <input
+        type="text"
+        id="path-input"
+        placeholder="D:\PVP\resources\[pvp]\pvp_hud"
+        autocomplete="off"
+        spellcheck="false"
+      >
+      <button type="submit" class="btn btn-primary" id="path-scan-button">Scan</button>
+    </form>
+
+    <form class="scan-form" id="upload-form" style="display:none;">
+      <label class="file-drop" id="file-drop-label">
+        <span id="file-drop-text">Choose a .zip of the resource folder</span>
+        <input type="file" id="zip-input" accept=".zip">
+      </label>
+      <input type="password" id="token-input" placeholder="Access token (from your receipt)" autocomplete="off">
+      <button type="submit" class="btn btn-primary" id="upload-scan-button">Scan</button>
+    </form>
+    <div class="hint" id="upload-hint" style="display:none;">No access token yet? <a href="#pricing" style="color:var(--accent);">See pricing</a>.</div>
+
+    <div class="status-line" id="status-line"></div>
+
+    <div class="report">
+      <div class="report-bar">
+        <span class="dot" style="background:#ff5c5c"></span>
+        <span class="dot" style="background:#ffbd4a"></span>
+        <span class="dot" style="background:#39ff88"></span>
+        <span id="report-label" style="margin-left:6px;">no scan yet</span>
+      </div>
+      <div class="report-body" id="report-body">
+        <div class="report-empty">Enter a resource path above and click Scan.</div>
+      </div>
+    </div>
+
+    <div class="summary-line" id="summary-line"></div>
+
+    <div id="pricing" style="display:none;">
+      <div class="section-head">
+        <div class="section-eyebrow">Pricing</div>
+        <h1 style="font-size:clamp(24px,3vw,32px);">Pay per scan, or go unlimited</h1>
+      </div>
+      <div class="pricing">
+        <div class="price-card">
+          <div class="price-name">Single scan</div>
+          <div class="price-amt">$5<span> one-time</span></div>
+          <div class="price-desc">One resource, full severity breakdown, AI-generated fix suggestions. Access token good for one scan.</div>
+          <button class="btn btn-ghost" data-plan="one_time">Buy a scan</button>
+        </div>
+        <div class="price-card featured">
+          <div class="price-name">Unlimited</div>
+          <div class="price-amt">$15<span> / month</span></div>
+          <div class="price-desc">Unlimited scans for as long as you're subscribed. Cancel anytime.</div>
+          <button class="btn btn-primary" data-plan="subscription">Subscribe</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  const pathForm = document.getElementById('path-form');
+  const pathInput = document.getElementById('path-input');
+  const pathScanButton = document.getElementById('path-scan-button');
+
+  const uploadForm = document.getElementById('upload-form');
+  const zipInput = document.getElementById('zip-input');
+  const fileDropText = document.getElementById('file-drop-text');
+  const tokenInput = document.getElementById('token-input');
+  const uploadScanButton = document.getElementById('upload-scan-button');
+  const uploadHint = document.getElementById('upload-hint');
+
+  const statusLine = document.getElementById('status-line');
+  const reportLabel = document.getElementById('report-label');
+  const reportBody = document.getElementById('report-body');
+  const summaryLine = document.getElementById('summary-line');
+  const pricingSection = document.getElementById('pricing');
+  const modePill = document.getElementById('mode-pill');
+  const sectionSub = document.getElementById('section-sub');
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  function renderFindings(findings) {
+    if (findings.length === 0) {
+      reportBody.innerHTML = '<div class="report-empty">No findings. Nothing matched the current rule set.</div>';
+      return;
+    }
+    reportBody.innerHTML = findings
+      .map((f) => `
+        <div class="finding ${f.severity}">
+          <div class="f-title"><span class="badge ${f.severity}">${escapeHtml(f.severity)}</span> ${escapeHtml(f.title)}</div>
+          <div class="f-code">${escapeHtml(f.file)}:${f.line} &nbsp; ${escapeHtml(f.code_snippet)}</div>
+          <div class="f-desc">${escapeHtml(f.fix || '')}</div>
+        </div>
+      `)
+      .join('');
+  }
+
+  function showScanning(label) {
+    statusLine.textContent = '';
+    statusLine.classList.remove('error');
+    reportLabel.textContent = 'scanning...';
+    summaryLine.textContent = '';
+  }
+
+  function showResult(label, data) {
+    reportLabel.textContent = `${label} — scan complete`;
+    renderFindings(data.findings);
+    summaryLine.textContent =
+      `${data.summary.critical} critical, ${data.summary.warning} warnings, ${data.summary.clean} clean` +
+      ` — ${data.fileCount} file(s) scanned`;
+  }
+
+  function showError(message) {
+    reportLabel.textContent = 'scan failed';
+    statusLine.textContent = message;
+    statusLine.classList.add('error');
+    reportBody.innerHTML = '<div class="report-empty">Scan failed. See message above.</div>';
+  }
+
+  pathForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const p = pathInput.value.trim();
+    if (!p) return;
+
+    pathScanButton.disabled = true;
+    pathScanButton.textContent = 'Scanning...';
+    showScanning();
+
+    try {
+      const res = await fetch('/api/scan', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ path: p }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `Request failed with ${res.status}`);
+      showResult(p, data);
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      pathScanButton.disabled = false;
+      pathScanButton.textContent = 'Scan';
+    }
+  });
+
+  zipInput.addEventListener('change', () => {
+    fileDropText.textContent = zipInput.files[0] ? zipInput.files[0].name : 'Choose a .zip of the resource folder';
+  });
+
+  uploadForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const file = zipInput.files[0];
+    if (!file) {
+      showError('Choose a .zip file first.');
+      return;
+    }
+
+    uploadScanButton.disabled = true;
+    uploadScanButton.textContent = 'Scanning...';
+    showScanning();
+
+    try {
+      const formData = new FormData();
+      formData.append('resource', file);
+
+      const res = await fetch('/api/scan-upload', {
+        method: 'POST',
+        headers: tokenInput.value.trim() ? { 'x-access-token': tokenInput.value.trim() } : {},
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `Request failed with ${res.status}`);
+      showResult(file.name, data);
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      uploadScanButton.disabled = false;
+      uploadScanButton.textContent = 'Scan';
+    }
+  });
+
+  pricingSection.addEventListener('click', async (event) => {
+    const button = event.target.closest('button[data-plan]');
+    if (!button) return;
+
+    button.disabled = true;
+    const originalText = button.textContent;
+    button.textContent = 'Redirecting...';
+
+    try {
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ plan: button.dataset.plan }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Checkout failed.');
+      window.location.href = data.url;
+    } catch (err) {
+      statusLine.textContent = err.message;
+      statusLine.classList.add('error');
+      button.disabled = false;
+      button.textContent = originalText;
+    }
+  });
+
+  (async function init() {
+    try {
+      const res = await fetch('/api/config');
+      const config = await res.json();
+
+      if (config.requirePayment) {
+        pathForm.style.display = 'none';
+        uploadForm.style.display = 'flex';
+        uploadHint.style.display = 'block';
+        pricingSection.style.display = 'block';
+        modePill.textContent = 'paid scan — upload a zip, requires an access token';
+        sectionSub.textContent = 'Upload a zip of your resource folder. Requires a paid access token — see pricing below.';
+        reportBody.innerHTML = '<div class="report-empty">Upload a .zip and enter your access token to scan.</div>';
+      }
+    } catch {
+      // config fetch failing just leaves the default (local, path-based) UI active.
+    }
+  })();
+</script>
+
+</body>
+</html>

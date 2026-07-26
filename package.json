@@ -1,0 +1,39 @@
+{
+  "name": "w0nd3r-guard",
+  "version": "1.0.0",
+  "description": "Security scanner for FiveM server resources (QBCore/ESX Lua scripts)",
+  "main": "src/scan.js",
+  "bin": {
+    "w0nd3r-guard": "bin/w0nd3r-guard.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "start": "node bin/w0nd3r-guard.js web",
+    "test": "node --test",
+    "test:api": "node scripts/check-api-connection.js"
+  },
+  "keywords": [
+    "fivem",
+    "qbcore",
+    "esx",
+    "lua",
+    "security",
+    "scanner"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "adm-zip": "^0.6.0",
+    "busboy": "^1.6.0",
+    "luaparse": "^0.3.1",
+    "stripe": "^22.3.1"
+  }
+}

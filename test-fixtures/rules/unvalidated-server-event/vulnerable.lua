@@ -1,0 +1,5 @@
+RegisterServerEvent('esx_society:setJob')
+AddEventHandler('esx_society:setJob', function(source, targetGrade)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    xPlayer.setJob('police', targetGrade)
+end)
