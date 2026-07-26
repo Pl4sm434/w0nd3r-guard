@@ -6,25 +6,58 @@ vulnerability patterns — unvalidated server events, missing ACE checks,
 SQL string concatenation, hardcoded secrets, and unsafe exports — with a
 severity, the exact file/line, and a plain-English fix suggestion.
 
-## Install
+It runs entirely on your own computer. Nothing about your resources or
+your filesystem is sent anywhere, unless you opt into AI-generated fix
+suggestions (see below).
+
+## Download and run it
+
+### 1. Install Node.js
+
+You need Node.js version 18 or newer to run this.
+
+- Go to **[nodejs.org](https://nodejs.org)**
+- Download and run the **LTS** installer for your OS
+- To confirm it installed, open a terminal (Command Prompt, PowerShell,
+  or Terminal on macOS) and run:
+
+  ```bash
+  node --version
+  ```
+
+  You should see something like `v20.x.x` or higher.
+
+### 2. Download this project
+
+- Go to **[github.com/Pl4sm434/w0nd3r-guard](https://github.com/Pl4sm434/w0nd3r-guard)**
+- Click the green **Code** button → **Download ZIP**
+- Extract the zip somewhere on your computer (e.g. your Desktop)
+
+(If you're comfortable with git, `git clone` works too instead of
+downloading the zip.)
+
+### 3. Install its dependencies
+
+Open a terminal, navigate into the folder you extracted, and run:
 
 ```bash
-npm install -g w0nd3r-guard
+cd path\to\w0nd3r-guard
+npm install
 ```
 
-This installs the `w0nd3r-guard` command globally.
+This only needs to be done once.
 
-## Usage
+### 4. Run it
+
+**Option A — command line**, scan a resource folder directly:
 
 ```bash
-w0nd3r-guard scan ./resources/my-resource
+node bin/w0nd3r-guard.js scan "C:\path\to\your\resource"
 ```
 
-### Example run
+You'll get output like:
 
 ```
-$ w0nd3r-guard scan ./resources/esx_society
-
 [CRITICAL] SQL query built with string concatenation in MySQL.query
 server/money.lua:76
 This SQL query is built by string concatenation, which allows SQL
@@ -36,18 +69,40 @@ MySQL.query('...WHERE label = @label', { ['@label'] = label })).
 ```
 
 Exit code is `1` if any critical findings were reported, `0` otherwise —
-safe to wire into CI.
+safe to wire into CI if you use it that way later.
+
+**Option B — browser UI**, point-and-click instead of typing commands:
+
+```bash
+npm start
+```
+
+Then open **http://localhost:4173** in your browser, paste in the full
+path to a resource folder, and click **Scan**.
+
+### Optional: run it as a global command
+
+If you don't want to type `node bin/w0nd3r-guard.js` every time:
+
+```bash
+npm link
+```
+
+Afterward you can just run `w0nd3r-guard scan <path>` from anywhere.
 
 ## AI-generated fix suggestions (optional)
 
 By default, fix suggestions come from a static explanation baked in per
-rule. Set `ANTHROPIC_API_KEY` in your environment to get a tailored
-explanation generated per finding instead:
+rule — no internet connection or API key needed at all. If you want a
+tailored explanation generated per finding instead, set
+`ANTHROPIC_API_KEY` in your environment before running a scan:
 
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-...
-w0nd3r-guard scan ./resources/my-resource
+node bin/w0nd3r-guard.js scan "C:\path\to\your\resource"
 ```
+
+(On Windows PowerShell: `$env:ANTHROPIC_API_KEY = "sk-ant-..."`)
 
 Only the flagged code snippet and the rule ID are sent to the API — never
 the whole file. Responses are cached locally (keyed by a hash of the rule
@@ -66,20 +121,18 @@ working — it has no hard dependency on the API.
 | `hardcoded-secret` | A password, API key, or token literal hardcoded in source |
 | `unsafe-export` | An `exports(...)` call that changes money/jobs/permissions with no `GetInvokingResource()` check |
 
-## Web UI
+## Hosting a paid instance (advanced, optional)
 
-`w0nd3r-guard web` starts a local server (`http://localhost:4173`) hosting
-a browser UI for the same scanner — useful for demoing or for anyone who'd
-rather not use the CLI. By default it runs in free/local mode: type an
-absolute folder path and it scans your own filesystem, same as the CLI.
-
-## Hosting a paid instance
+Everything above is for running the tool locally on your own machine,
+which is the primary way it's meant to be used. It's also possible to
+deploy it as a hosted, paid web service (zip-upload scanning + a Stripe
+paywall) — this is a separate, more involved setup for anyone who wants
+to actually run it as a product rather than a personal tool.
 
 Setting `W0ND3R_GUARD_REQUIRE_PAYMENT=true` switches the web UI into
 hosted mode: path-based scanning is disabled (a remote server can't read
 a visitor's local disk), the page switches to a zip-upload form, and
-every scan requires a paid access token. This is meant for actually
-deploying the tool as a paid product rather than running it locally.
+every scan requires a paid access token.
 
 ### 1. Set up Stripe
 
@@ -117,7 +170,9 @@ when `PORT` is set (it only binds to loopback-only in plain local dev).
 - **Railway**: create a new project from this repo, add the env vars
   above under Variables, deploy. Note the public URL it gives you.
 - **Render**: new Web Service from this repo, build command `npm install`,
-  start command `npm start`, add the env vars, deploy.
+  start command `npm start`, add the env vars, deploy. Render's free
+  tier spins the service down after inactivity and wakes it back up on
+  the next request (not instant, but doesn't require payment on their end).
 
 ### 4. Wire up the Stripe webhook
 
@@ -139,10 +194,9 @@ Copy the signing secret into `STRIPE_WEBHOOK_SECRET`.
   wherever `W0ND3R_GUARD_TOKENS_PATH` points) — there's no user database,
   login, or password, just a bearer token tied to a Stripe customer.
 
-This is a minimal MVP paywall, not a full billing system — there's no
-"forgot my token" recovery flow, no usage dashboard, and no dunning
-handling beyond what Stripe's webhook gives you for free. Treat it as a
-starting point, not a finished SaaS backend.
+This is a minimal MVP paywall, not a full billing system, and on most
+free hosting tiers the token/cache storage above doesn't persist across
+restarts — treat it as a starting point, not a finished SaaS backend.
 
 ## Development
 
